@@ -5698,6 +5698,84 @@ st.set_page_config(
 # --- DARK MODE & CURSOR CSS ---
 st.markdown("""
 <style>
+    /* 1. GLOBAL BROWSER OVERRIDE */
+    /* This tells the browser to render scrollbars and native inputs in dark mode */
+    :root {
+        color-scheme: dark;
+    }
+
+    /* 2. MAIN CONTAINERS */
+    .stApp {
+        background-color: #000000; /* Pure Black */
+        color: #e0e0e0;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #111111; /* Very dark grey for contrast */
+        border-right: 1px solid #333;
+    }
+
+    /* 3. WIDGETS (Inputs, Selectboxes, Sliders) - FORCE DARK */
+    /* Input Boxes Background */
+    div[data-baseweb="input"] > div, 
+    div[data-baseweb="select"] > div,
+    div[data-testid="stTextInput"] > div > div {
+        background-color: #1a1a1a !important;
+        color: white !important;
+        border-color: #444 !important;
+    }
+    /* Input Text Color */
+    input, .stSelectbox div, .stMultiSelect div {
+        color: white !important;
+    }
+    /* Dropdown Menu Options */
+    ul[data-testid="stSelectboxVirtualDropdown"] {
+        background-color: #1a1a1a !important;
+    }
+    
+    /* 4. DATAFRAME TABLE STYLING */
+    .stDataFrame {
+        border: 1px solid #333;
+        border-radius: 8px;
+        background-color: #000000;
+    }
+    
+    /* 5. METRICS BOXES */
+    [data-testid="stMetric"] {
+        background-color: #111111;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    [data-testid="stMetricLabel"] { color: #999; }
+    [data-testid="stMetricValue"] { color: #fff; }
+
+    /* 6. HEADERS & TEXT */
+    h1, h2, h3, h4, h5, h6 {
+        color: #ffffff !important;
+        font-family: 'Helvetica Neue', sans-serif;
+    }
+    p, label {
+        color: #cccccc !important;
+    }
+
+    /* 7. TABLE TWEAKS */
+    /* Hide the index column */
+    thead tr th:first-child { display:none }
+    tbody th { display:none }
+
+    /* CRITICAL: Change cursor to indicate draggability */
+    [data-testid="stDataFrame"] > div {
+        cursor: grab;
+    }
+    [data-testid="stDataFrame"] > div:active {
+        cursor: grabbing;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+#st.markdown("""
+"""<style>
     /* Main Background */
     .stApp {
         background-color: #000000;
@@ -5738,8 +5816,8 @@ st.markdown("""
     [data-testid="stDataFrame"] > div:active {
         cursor: grabbing;
     }
-</style>
-""", unsafe_allow_html=True)
+</style>"""
+#""", unsafe_allow_html=True)
 
 # ==========================================
 # 3. OPTIMIZED PROCESSING ENGINE
