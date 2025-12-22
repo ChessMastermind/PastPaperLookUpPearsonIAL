@@ -5774,50 +5774,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-#st.markdown("""
-"""<style>
-    /* Main Background */
-    .stApp {
-        background-color: #000000;
-        color: #fafafa;
-    }
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #262730;
-    }
-    /* DataFrame Table Container */
-    .stDataFrame {
-        border: 1px solid #333;
-        border-radius: 8px;
-    }
-    /* Headers */
-    h1, h2, h3 {
-        color: #e6e6e6 !important;
-        font-family: 'Helvetica Neue', sans-serif;
-    }
-    /* Metrics */
-    [data-testid="stMetric"] {
-        background-color: #000000;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #41444c;
-    }
-    [data-testid="stMetricLabel"] { color: #b0b0b0; }
-    [data-testid="stMetricValue"] { color: #ffffff; }
-    
-    /* Hide Index */
-    thead tr th:first-child { display:none }
-    tbody th { display:none }
 
-    /* CRITICAL: Change cursor to indicate draggability */
-    [data-testid="stDataFrame"] > div {
-        cursor: grab;
-    }
-    [data-testid="stDataFrame"] > div:active {
-        cursor: grabbing;
-    }
-</style>"""
-#""", unsafe_allow_html=True)
 
 # ==========================================
 # 3. OPTIMIZED PROCESSING ENGINE
