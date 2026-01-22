@@ -1,120 +1,126 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
+import io
 import streamlit.components.v1 as components
-import requests
-from bs4 import BeautifulSoup
-import re
-import os
+import datetime
 
-# --- 1. CONFIGURATION ---
-TARGET_URL = "https://chessmastermind.github.io/moon-papers"  # No trailing slash for cleaner joins
-GOATCOUNTER_URL = "https://moon-papers.goatcounter.com/count"
-TRACKING_PATH = "redirect_from_web1"
+# ==========================================
+# PAGE CONFIGURATION
+# ==========================================
+st.set_page_config(
+    page_title="Moon Papers",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-# --- 2. ANTI-FLASH CONFIG ---
-# Force dark mode instantly to hide loading glitches
-if not os.path.exists(".streamlit"):
-    os.makedirs(".streamlit")
-with open(".streamlit/config.toml", "w") as f:
-    f.write("""
-[theme]
-base="dark"
-backgroundColor="#000000"
-secondaryBackgroundColor="#000000"
-textColor="#FFFFFF"
-[server]
-headless = true
-    """)
+# ==========================================
+# CLOSING NOTICE & REDIRECT LOGIC
+# ==========================================
+# Set the deadline date (3 days from Jan 5, 2026 -> Jan 8, 2026)
+redirect_date = datetime.datetime(2026, 1, 8)
 
-st.set_page_config(page_title="Moon Papers", layout="wide")
-
-# --- 3. CSS "FULL TAKEOVER" ---
-# This CSS hides Streamlit and prepares the viewport for the incoming site
-st.markdown("""
-    <style>
-        /* Hide all Streamlit UI */
-        header, footer, [data-testid="stToolbar"], .stDeployButton {display: none !important;}
-        
-        /* Reset containers to 0 padding/margin */
-        .stApp, .block-container {
-            background-color: #000000 !important;
-            padding: 0 !important; margin: 0 !important;
-            overflow: hidden !important;
-        }
-
-        /* Force the component to be fullscreen */
-        iframe[title="streamlit.components.v1.html.html_component"] {
-            position: fixed !important;
-            top: 0 !important; left: 0 !important;
-            width: 100vw !important; height: 100vh !important;
-            border: none !important; z-index: 99999;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- 4. THE ROBUST PROXY ENGINE ---
-@st.cache_data(ttl=300) # Cache for 5 mins for speed
-def get_rewritten_site(url):
-    try:
-        # A. Fetch Raw Content
-        response = requests.get(url)
-        response.raise_for_status()
-        html = response.text
-        
-        # B. AGGRESSIVE LINK REWRITING (The Fix for "Black Screen")
-        # We physically replace relative paths with absolute GitHub paths.
-        # This fixes Webpack chunks, CSS files, and Images.
-        
-        # Regex patterns to find relative URLs (e.g. src="/_next/...")
-        # We look for src=", href=", and content=" starting with /
-        base_url = url
-        
-        # 1. Fix src="/..." -> src="https://base/..."
-        html = re.sub(r'src="/([^"]*)"', f'src="{base_url}/\\1"', html)
-        
-        # 2. Fix href="/..." -> href="https://base/..."
-        html = re.sub(r'href="/([^"]*)"', f'href="{base_url}/\\1"', html)
-        
-        # 3. Fix standard CSS url('/...') -> url('https://base/...')
-        html = re.sub(r'url\(\'\/([^\']*)\'\)', f'url(\'{base_url}/\\1\')', html)
-        
-        # C. SOUP CLEANING
-        soup = BeautifulSoup(html, 'html.parser')
-        
-        # 1. Remove Integrity Checks (Fixes "Flash" crashes)
-        # Browsers block proxied scripts with integrity checks because the domain changed.
-        for tag in soup.find_all(attrs={"integrity": True}):
-            del tag['integrity']
-            
-        # 2. Inject Tracking (GoatCounter)
-        # We inject it at the top of HEAD to ensure it captures the hit.
-        gc_script = f"""
-            window.goatcounter = {{
-                endpoint: '{GOATCOUNTER_URL}',
-                path: '{TRACKING_PATH}',
-                no_onload: false
-            }};
+if datetime.datetime.now() > redirect_date:
+    # ---------------------------------------------------------
+    # SCENARIO A: DEADLINE PASSED (Immediate Redirect)
+    # ---------------------------------------------------------
+    st.markdown(
         """
-        script_tag = soup.new_tag("script")
-        script_tag.string = gc_script
-        if soup.head:
-            soup.head.insert(0, script_tag)
-            soup.head.insert(1, soup.new_tag("script", attrs={"async": "", "src": "//gc.zgo.at/count.js"}))
-
-        return str(soup)
-
-    except Exception as e:
-        return f"""
-        <div style="color:white; padding:20px; font-family:sans-serif;">
-            <h1>Proxy Error</h1>
-            <p>Could not fetch content. Error details:</p>
-            <pre>{e}</pre>
+        <style>
+            /* Hide Streamlit UI elements during the transition */
+            .stApp { display: none; }
+        </style>
+        <meta http-equiv="refresh" content="0; url=https://chessmastermind.github.io/moon-papers/" />
+        <script>
+            window.location.href = "https://chessmastermind.github.io/moon-papers/";
+        </script>
+        <div style="text-align: center; padding: 50px;">
+            <h1>Website Closed</h1>
+            <p>Redirecting to <a href="https://chessmastermind.github.io/moon-papers/">Moon Papers</a>...</p>
         </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.stop()
+
+else:
+    # ---------------------------------------------------------
+    # SCENARIO B: DEADLINE ACTIVE (Popup + Iframe)
+    # ---------------------------------------------------------
+    
+    # 1. CSS: Hide UI & Force Dark Theme
+    st.markdown("""
+        <style>
+            /* Hide Header, Footer, Hamburger, Toolbar */
+            header, footer, [data-testid="stToolbar"], .stDeployButton {
+                display: none !important;
+            }
+            
+            /* Remove Padding/Margins for Full Screen Feel */
+            .block-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+            }
+            
+            /* Force Background Black */
+            .stApp {
+                background-color: #000000 !important;
+            }
+            
+            /* Button Styling for the Popup */
+            .stButton > button {
+                width: 100%;
+                border-radius: 8px;
+                background-color: #262730;
+                color: white;
+                border: 1px solid #444;
+            }
+            .stButton > button:hover {
+                border-color: #00ff00;
+                color: #00ff00;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 2. Popup State Management
+    if 'popup_closed' not in st.session_state:
+        st.session_state['popup_closed'] = False
+
+    # 3. Logic: Show Popup OR Show Website
+    if not st.session_state['popup_closed']:
+        # --- THE POPUP ---
+        # We use a container to center the warning message
+        with st.container():
+            st.markdown("<br><br><br>", unsafe_allow_html=True) # Spacer
+            col1, col2, col3 = st.columns([1, 2, 1])
+            
+            with col2:
+                st.info(f"⚠️ **Notice:** This legacy link will stop working on {redirect_date.strftime('%B %d, %Y')}. Please update your bookmarks.")
+                
+                # The 'Got it' button
+                if st.button("I understand, continue to site"):
+                    st.session_state['popup_closed'] = True
+                    st.rerun()
+
+    else:
+        # --- THE WEBSITE (Full Screen) ---
+        # This only renders after the user clicks the button
+        html_content = """
+        <!DOCTYPE html>
+        <html style="overflow: hidden;">
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <script data-goatcounter="https://moon-papers.goatcounter.com/count"
+                    async src="//gc.zgo.at/count.js"></script>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #000000;">
+            <iframe 
+                src="https://chessmastermind.github.io/moon-papers/" 
+                style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; border: none; z-index: 9999;"
+                allowfullscreen
+            ></iframe>
+        </body>
+        </html>
         """
-
-# --- 5. EXECUTION ---
-# Get the "Safe" HTML
-proxy_html = get_rewritten_site(TARGET_URL)
-
-# Render it. 
-# We use scrolling=True so the proxied site handles its own scrolling.
-components.html(proxy_html, height=1000, scrolling=True)
+        components.html(html_content, height=1000, scrolling=False)
