@@ -8,7 +8,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Complete UI Wipeout (Hides everything Streamlit-related)
+# 2. Complete UI Wipeout
 st.markdown(
     """
     <style>
@@ -26,12 +26,11 @@ st.markdown(
 )
 
 # 3. The Unconditional Redirect & Tracker
-# This runs immediately without any date checks.
 target_url = "https://chessmastermind.github.io/moon-papers/"
 
 st.markdown(
     f"""
-    <div style="text-align: center; padding-top: 30vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <div style="text-align: center; padding-top: 30vh; font-family: sans-serif;">
         <h2 style="color: #333;">Moving to Moon Papers</h2>
         <p style="color: #666;">Redirecting you now...</p>
         <p style="font-size: 0.8em;">If nothing happens, <a href="{target_url}">click here</a>.</p>
@@ -45,10 +44,10 @@ st.markdown(
          alt="">
 
     <script>
-        // Redirect after a 0.5s delay to ensure the hit is recorded
-        setTimeout(function() {
+        // Use double curly braces to escape them in a Python f-string
+        setTimeout(function() {{
             window.location.href = "{target_url}";
-        }, 500);
+        }}, 500);
     </script>
     """,
     unsafe_allow_html=True
