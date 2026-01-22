@@ -9,7 +9,7 @@ TARGET_URL = "https://chessmastermind.github.io/moon-papers/"
 GOATCOUNTER_URL = "https://moon-papers.goatcounter.com/count"
 TRACKING_PATH = "redirect_from_web1"
 
-# Force Dark Mode Server-Side
+# Force Server-Side Dark Mode (Prevents white flash)
 if not os.path.exists(".streamlit"):
     os.makedirs(".streamlit")
 with open(".streamlit/config.toml", "w") as f:
@@ -25,79 +25,104 @@ headless = true
 
 st.set_page_config(page_title="Moon Papers", layout="wide")
 
-# --- 2. CSS RESET (The "Container" Fix) ---
-# Even though we are proxying, we still need to hide Streamlit's UI 
-# to make the iframe look like the native app.
+# --- 2. CSS LAYOUT FIXES ---
+# We force the Streamlit iframe to be 100vw/100vh using a brute-force CSS selector.
 st.markdown("""
     <style>
+        /* Hide Streamlit UI */
         header, footer, [data-testid="stToolbar"] {display: none !important;}
-        .stApp {
+        
+        /* Force background black */
+        .stApp, .block-container {
             background-color: #000000 !important;
+            padding: 0 !important; margin: 0 !important;
             overflow: hidden !important;
         }
-        .block-container {
-            padding: 0 !important; margin: 0 !important; max-width: 100% !important;
-        }
-        iframe[title="streamlit.components.v1.html.html_component"] {
+
+        /* BRUTE FORCE IFRAME SIZING */
+        /* This targets the iframe created by components.html */
+        iframe {
             position: fixed !important;
-            top: 0 !important; left: 0 !important;
-            width: 100vw !important; height: 100vh !important;
-            border: none !important; z-index: 99999;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 999999 !important;
+            border: none !important;
+            background: #000000;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. THE PROXY ENGINE ---
-@st.cache_data(ttl=600)  # Cache for 10 mins to speed up reload
-def fetch_and_process_content(url):
+# --- 3. PROXY LOGIC ---
+@st.cache_data(ttl=600)
+def get_proxy_content(url):
     try:
-        # A. Fetch the raw HTML from GitHub
+        # A. Python fetches the raw HTML
         response = requests.get(url)
         response.raise_for_status()
         
         # B. Parse HTML
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # C. INJECT <BASE> TAG (Critical for Proxy)
-        # This tells the browser: "All relative links (css, images, js) 
-        # should be loaded from GitHub, not this Streamlit app."
+        # C. [CRITICAL FIX] INJECT <BASE> TAG
+        # This fixes the "Flash": it forces all CSS/JS links to load from the real site.
         base_tag = soup.new_tag("base", href=url)
         if soup.head:
             soup.head.insert(0, base_tag)
 
-        # D. INJECT GOATCOUNTER (With Custom Path)
-        # We define the settings *before* loading the script.
-        gc_script_config = soup.new_tag("script")
-        gc_script_config.string = f"""
+        # D. [CRITICAL FIX] REMOVE INTEGRITY CHECKS
+        # Often causes the "Black Screen". We strip 'integrity' attributes so 
+        # the browser doesn't block the scripts.
+        for tag in soup.find_all(attrs={"integrity": True}):
+            del tag['integrity']
+
+        # E. INJECT GOATCOUNTER (Safe Mode)
+        gc_script = f"""
             window.goatcounter = {{
                 endpoint: '{GOATCOUNTER_URL}',
                 path: '{TRACKING_PATH}',
                 no_onload: false
             }};
         """
-        gc_script_loader = soup.new_tag("script", attrs={"async": "", "src": "//gc.zgo.at/count.js"})
+        script_tag = soup.new_tag("script")
+        script_tag.string = gc_script
+        soup.head.append(script_tag)
         
-        if soup.head:
-            soup.head.append(gc_script_config)
-            soup.head.append(gc_script_loader)
+        soup.head.append(soup.new_tag("script", attrs={"async": "", "src": "//gc.zgo.at/count.js"}))
 
-        # E. INJECT RESIZER SCRIPT
-        # This ensures the proxied content fits the iframe perfectly without scrollbars.
-        resizer_style = soup.new_tag("style")
-        resizer_style.string = "body { margin: 0; overflow-x: hidden; background-color: #000000; }"
-        
-        if soup.head:
-            soup.head.append(resizer_style)
+        # F. [VISIBILITY ENFORCER]
+        # This script runs last. It finds any "Loading" overlays or hidden body tags
+        # and forces them to be visible.
+        forcer = soup.new_tag("script")
+        forcer.string = """
+            document.addEventListener("DOMContentLoaded", function() {
+                // 1. Force Body Visible
+                document.body.style.display = 'block';
+                document.body.style.opacity = '1';
+                document.body.style.visibility = 'visible';
+                
+                // 2. Kill potential loading overlays
+                // (If your site uses a div id="loader" or class="loading", this helps)
+                var overlays = document.querySelectorAll('[id*="load"], [class*="load"]');
+                overlays.forEach(el => {
+                    // Only hide if it covers the whole screen
+                    if(el.offsetWidth > 100 && el.offsetHeight > 100) {
+                        el.style.display = 'none';
+                    }
+                });
+            });
+        """
+        soup.body.append(forcer)
 
         return str(soup)
 
     except Exception as e:
-        return f"<h1 style='color:white'>Error loading proxy: {e}</h1>"
+        return f"<h1 style='color:red'>Proxy Error: {e}</h1>"
 
 # --- 4. RENDER ---
-# Get the modified HTML
-proxy_content = fetch_and_process_content(TARGET_URL)
+html_payload = get_proxy_content(TARGET_URL)
 
-# Serve it. 
-# height=1000 is a placeholder; CSS forces it to 100vh.
-components.html(proxy_content, height=1000, scrolling=True)
+# We use scrolling=True to allow the *internal* site to scroll,
+# but the iframe itself is locked to 100vh by the CSS above.
+components.html(html_payload, height=1000, scrolling=True)
