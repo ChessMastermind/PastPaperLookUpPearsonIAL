@@ -2,9 +2,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 import os
 
-# --- 1. WHITE FLASH KILLER (Server-Side Config) ---
-# We create a config.toml file on the fly. This tells Streamlit to 
-# render the initial skeleton in black, preventing the blinding white flash.
+# --- 1. THE "ANTI-FLASH" CONFIG ---
+# This file MUST exist to tell the server "Send black background immediately".
 if not os.path.exists(".streamlit"):
     os.makedirs(".streamlit")
 
@@ -18,6 +17,7 @@ textColor="#FFFFFF"
 font="sans serif"
 [server]
 headless = true
+runOnSave = false
     """)
 
 # --- 2. PAGE SETUP ---
@@ -27,50 +27,49 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- 3. NUCLEAR CSS RESET ---
-# This fixes the "weird" desktop view by killing the centered layout 
-# and removing all margins.
+# --- 3. AGGRESSIVE CSS OVERRIDES ---
 hide_streamlit_ui = """
     <style>
-        /* Global Background Reset */
-        html, body, [class*="ViewContainer"], [class*="stApp"] {
+        /* 1. FORCE ROOT BLACK */
+        :root, html, body, .stApp {
             background-color: #000000 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important; /* Lock main scrollbar */
+            background: #000000 !important;
         }
 
-        /* Hide Streamlit UI */
-        header, footer, .stDeployButton, [data-testid="stToolbar"], [data-testid="stHeader"] {
+        /* 2. HIDE LOADING SKELETONS */
+        /* This hides the "Please wait..." text and skeletons if they try to appear */
+        .stSkeleton {
             display: none !important;
         }
-        
-        /* Kill the "Centered" Layout on Desktop */
+
+        /* 3. REMOVE ALL PADDING & MARGINS */
         .block-container {
             padding: 0 !important;
             margin: 0 !important;
             max-width: 100% !important;
         }
-        section.main {
-            width: 100vw !important;
-            height: 100vh !important;
+
+        /* 4. HIDE UI ELEMENTS */
+        header, footer, .stDeployButton, [data-testid="stToolbar"] {
+            display: none !important;
         }
         
-        /* Force the Component Container to be Full Screen */
+        /* 5. FIX IFRAME CONTAINER */
         iframe[title="streamlit.components.v1.html.html_component"] {
             position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
+            top: -1vh !important;    /* Slight negative offset for overscan */
+            left: -1vw !important;   /* Slight negative offset for overscan */
+            width: 102vw !important; /* Make it slightly bigger than screen */
+            height: 102vh !important; /* Make it slightly bigger than screen */
             z-index: 999999 !important;
             border: none !important;
+            background: #000000 !important; /* Ensure iframe itself is black */
         }
     </style>
 """
 st.markdown(hide_streamlit_ui, unsafe_allow_html=True)
 
-# --- 4. THE JAVASCRIPT PAYLOAD ---
+# --- 4. THE OVERSCAN PAYLOAD ---
 html_content = """
 <!DOCTYPE html>
 <html lang="en">
@@ -81,17 +80,22 @@ html_content = """
         body, html {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
-            background-color: #000000;
-            overflow: hidden; /* Prevent parent scrollbars */
+            background-color: #000000; /* Black immediately */
+            overflow: hidden;
         }
+        
+        /* FADE IN EFFECT */
+        /* We hide the iframe initially (opacity 0) and fade it in only when loaded.
+           This prevents seeing a white box while the external site connects. */
         #content-frame {
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
+            background-color: #000000;
             border: none;
             display: block;
-            /* We set width/height via JS, but start with 100% */
-            width: 100%;
-            height: 100%;
         }
     </style>
+    
     <script data-goatcounter="https://moon-papers.goatcounter.com/count"
             async src="//gc.zgo.at/count.js"></script>
 </head>
@@ -104,27 +108,35 @@ html_content = """
     ></iframe>
 
     <script>
-        // JAVASCRIPT RESIZER
-        // This ensures the iframe is exactly the size of the screen,
-        // fixing the mobile address bar issues and desktop centering.
-        function resizeFrame() {
-            var frame = document.getElementById("content-frame");
-            var w = window.innerWidth;
-            var h = window.innerHeight;
+        var frame = document.getElementById("content-frame");
+
+        function maximizeFrame() {
+            // OVERSCAN LOGIC
+            // We calculate 102% of the screen size to ensure edges are covered
+            var w = window.innerWidth * 1.02;
+            var h = window.innerHeight * 1.02;
             
             frame.style.width = w + "px";
             frame.style.height = h + "px";
+            
+            // Center the overscanned content (move it back up/left slightly)
+            frame.style.marginTop = "-1vh";
+            frame.style.marginLeft = "-1vw";
         }
 
-        // Run on load and whenever the screen resizes (rotation, etc)
-        window.addEventListener("load", resizeFrame);
-        window.addEventListener("resize", resizeFrame);
-        // Force run immediately
-        resizeFrame();
+        // FADE IN LOGIC
+        // When the external site inside the iframe actually loads, we turn opacity to 1
+        frame.onload = function() {
+            frame.style.opacity = "1";
+        };
+
+        // Listeners
+        window.addEventListener("load", maximizeFrame);
+        window.addEventListener("resize", maximizeFrame);
+        maximizeFrame();
     </script>
 </body>
 </html>
 """
 
-# We set height=1000 just to render the box, but the CSS 'fixed' position overrides it.
 components.html(html_content, height=1000, scrolling=False)
