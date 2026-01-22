@@ -2,9 +2,9 @@ import streamlit as st
 import streamlit.components.v1 as components
 import os
 
-# --- STEP 0: FORCE DARK THEME CONFIGURATION ---
-# We write a config.toml file on the fly to ensure Streamlit 
-# boots up in dark mode (black) instead of light mode (white).
+# --- 1. WHITE FLASH KILLER (Server-Side Config) ---
+# We create a config.toml file on the fly. This tells Streamlit to 
+# render the initial skeleton in black, preventing the blinding white flash.
 if not os.path.exists(".streamlit"):
     os.makedirs(".streamlit")
 
@@ -20,51 +20,43 @@ font="sans serif"
 headless = true
     """)
 
-# --- STEP 1: PAGE SETUP ---
+# --- 2. PAGE SETUP ---
 st.set_page_config(
     page_title="Moon Papers",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# --- STEP 2: NUCLEAR CSS RESET ---
-# This targets every specific Streamlit container that might hold a white background
-# and forces it to black with !important.
+# --- 3. NUCLEAR CSS RESET ---
+# This fixes the "weird" desktop view by killing the centered layout 
+# and removing all margins.
 hide_streamlit_ui = """
     <style>
-        /* 1. Global Reset for HTML/Body */
+        /* Global Background Reset */
         html, body, [class*="ViewContainer"], [class*="stApp"] {
             background-color: #000000 !important;
-            background: #000000 !important;
-            color: #000000 !important; /* Hide text cursor artifacts */
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important; /* Kill scrollbars on desktop */
+            overflow: hidden !important; /* Lock main scrollbar */
         }
 
-        /* 2. Hide Interface Elements */
+        /* Hide Streamlit UI */
         header, footer, .stDeployButton, [data-testid="stToolbar"], [data-testid="stHeader"] {
             display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
         }
         
-        /* 3. Collapse the main container */
+        /* Kill the "Centered" Layout on Desktop */
         .block-container {
             padding: 0 !important;
             margin: 0 !important;
             max-width: 100% !important;
         }
-
-        /* 4. Desktop Specific Fixes */
-        /* Sometimes the main container has a default width on desktop. We kill it. */
         section.main {
-            background-color: #000000 !important;
             width: 100vw !important;
             height: 100vh !important;
         }
         
-        /* 5. Force Iframe Component to be Full Screen */
+        /* Force the Component Container to be Full Screen */
         iframe[title="streamlit.components.v1.html.html_component"] {
             position: fixed !important;
             top: 0 !important;
@@ -73,13 +65,12 @@ hide_streamlit_ui = """
             height: 100vh !important;
             z-index: 999999 !important;
             border: none !important;
-            background: #000000 !important;
         }
     </style>
 """
 st.markdown(hide_streamlit_ui, unsafe_allow_html=True)
 
-# --- STEP 3: THE APP PAYLOAD ---
+# --- 4. THE JAVASCRIPT PAYLOAD ---
 html_content = """
 <!DOCTYPE html>
 <html lang="en">
@@ -87,19 +78,18 @@ html_content = """
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* Ensure the iframe environment is also black */
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000000 !important;
-            overflow: hidden;
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: #000000;
+            overflow: hidden; /* Prevent parent scrollbars */
         }
         #content-frame {
-            display: block;
             border: none;
-            background-color: #000000;
+            display: block;
+            /* We set width/height via JS, but start with 100% */
+            width: 100%;
+            height: 100%;
         }
     </style>
     <script data-goatcounter="https://moon-papers.goatcounter.com/count"
@@ -114,24 +104,27 @@ html_content = """
     ></iframe>
 
     <script>
+        // JAVASCRIPT RESIZER
+        // This ensures the iframe is exactly the size of the screen,
+        // fixing the mobile address bar issues and desktop centering.
         function resizeFrame() {
             var frame = document.getElementById("content-frame");
-            // Capture the viewport dimensions
             var w = window.innerWidth;
             var h = window.innerHeight;
             
-            // Force the iframe to match
             frame.style.width = w + "px";
             frame.style.height = h + "px";
         }
 
-        // Trigger on load and resize
+        // Run on load and whenever the screen resizes (rotation, etc)
         window.addEventListener("load", resizeFrame);
         window.addEventListener("resize", resizeFrame);
+        // Force run immediately
         resizeFrame();
     </script>
 </body>
 </html>
 """
 
+# We set height=1000 just to render the box, but the CSS 'fixed' position overrides it.
 components.html(html_content, height=1000, scrolling=False)
