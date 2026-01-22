@@ -4,44 +4,63 @@ import streamlit as st
 st.set_page_config(
     page_title="Moon Papers",
     page_icon="🌙",
-    layout="wide", # Essential for full-width
+    layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# 2. Complete UI Wipeout (Dark Theme)
-# This removes all Streamlit margins and bars so the iframe fills everything.
+# 2. Maximum UI Stripping (Hides 'Manage app', Header, and Footer)
 st.markdown(
     """
     <style>
-    /* Hide Streamlit UI */
-    #MainMenu, footer, header, [data-testid="stToolbar"], 
-    [data-testid="stDecoration"], [data-testid="stStatusWidget"] {
+    /* Hide the 'Manage app' button and status widget */
+    [data-testid="stStatusWidget"], 
+    button[title="Manage app"],
+    .stDeployButton {
         display: none !important;
     }
-    
-    /* Remove all padding from the Streamlit container */
+
+    /* Hide the Main Menu (Hamburger) and Header */
+    #MainMenu, header, [data-testid="stHeader"] {
+        visibility: hidden !important;
+        display: none !important;
+    }
+
+    /* Hide the Footer */
+    footer {
+        visibility: hidden !important;
+        display: none !important;
+    }
+
+    /* Total Screen Reset */
     .block-container {
         padding: 0rem !important;
         max-width: 100% !important;
         height: 100vh !important;
     }
 
-    /* Ensure the iframe container is full height */
     [data-testid="stVerticalBlock"] {
         gap: 0rem;
     }
 
-    body {
-        background-color: #000000;
+    /* Force the background to black and remove scrollbars */
+    body, .stApp {
+        background-color: #000000 !important;
         margin: 0;
-        overflow: hidden; /* Prevent double scrollbars */
+        overflow: hidden !important;
+    }
+
+    iframe {
+        border: none;
+        width: 100vw;
+        height: 100vh;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# 3. The Proxy Logic (Iframe + GoatCounter)
+# 3. The Proxy Logic
+# We use the Streamlit components to embed the GitHub Pages site.
 target_url = "https://chessmastermind.github.io/moon-papers/"
 
 st.components.v1.html(
@@ -51,10 +70,9 @@ st.components.v1.html(
 
     <iframe 
         src="{target_url}" 
-        style="position:fixed; top:0; left:0; bottom:0; right:0; width:100%; height:100%; border:none; margin:0; padding:0; overflow:hidden; z-index:999999;"
-    >
-        Your browser doesn't support iframes.
-    </iframe>
+        style="position:fixed; top:0; left:0; width:100vw; height:100vh; border:none; margin:0; padding:0; overflow:hidden; z-index:999999;"
+        allowfullscreen
+    ></iframe>
     """,
-    height=1000, # This is a fallback; the CSS above handles the real height
+    height=2000, # Large height to ensure the iframe has room to expand
 )
