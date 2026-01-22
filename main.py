@@ -1,41 +1,41 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# 1. Configuration: Set wide layout and basic page metadata
+# 1. Configuration
 st.set_page_config(
     page_title="Moon Papers",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# 2. Aggressive CSS Injection
-# - Hides the Streamlit toolbar, footer, and hamburger menu.
-# - Resets padding on the main block containers to 0.
-# - Forces a black background to prevent white flash on load.
+# 2. Aggressive CSS: Hide UI + Lock Resolution
+# We add 'overflow: hidden' to .stApp to prevent Streamlit from 
+# adding its own scrollbars, forcing the app to match the screen resolution exactly.
 hide_streamlit_ui = """
     <style>
-        /* Hide the header/toolbar/hamburger */
-        header[data-testid="stHeader"] {display: none !important;}
-        section[data-testid="stSidebar"] {display: none !important;}
-        .stDeployButton {display: none !important;}
-        [data-testid="stToolbar"] {display: none !important;}
-        footer {display: none !important;}
+        /* Hide all standard Streamlit UI elements */
+        header[data-testid="stHeader"],
+        section[data-testid="stSidebar"],
+        .stDeployButton,
+        [data-testid="stToolbar"],
+        footer {
+            display: none !important;
+        }
         
-        /* Remove all margins and padding from the main container */
+        /* Reset Block Container */
         .block-container {
-            padding-top: 0rem !important;
-            padding-bottom: 0rem !important;
-            padding-left: 0rem !important;
-            padding-right: 0rem !important;
+            padding: 0 !important;
             margin: 0 !important;
         }
         
-        /* Force background to black for dark mode consistency */
+        /* FORCE FULL SCREEN RESOLUTION */
+        /* This removes the scrollbar from the main Streamlit app, 
+           ensuring the iframe is the only thing the user interacts with. */
         .stApp {
             background-color: #000000 !important;
+            overflow: hidden !important; 
         }
         
-        /* Ensure the iframe container takes up the full space if needed */
         iframe {
             display: block;
         }
@@ -43,34 +43,36 @@ hide_streamlit_ui = """
 """
 st.markdown(hide_streamlit_ui, unsafe_allow_html=True)
 
-# 3. The Payload (Iframe + Analytics)
-# We use a raw HTML component to inject the iframe. 
-# Key Technical Details:
-# - position: fixed: This breaks the iframe out of the Streamlit 'flow', allowing it to cover headers/padding.
-# - height: 100dvh: Ensures the viewport height is dynamic on mobile browsers (handles address bar resizing).
-# - z-index: 99999: Forces the iframe to sit on top of any residual UI elements.
-# - Sandbox: Added 'allow-same-origin' and 'allow-scripts' to satisfy strict browser security (DuckDuckGo/Brave).
-
+# 3. The Responsive Payload
+# The CSS below dynamically captures the "Current Screen Resolution"
+# regardless of the device.
 html_content = """
 <!DOCTYPE html>
 <html>
 <head>
     <style>
+        /* Reset standard HTML margins */
         body, html {
             margin: 0; 
             padding: 0; 
-            overflow: hidden; 
+            overflow: hidden; /* Prevent internal scrolling */
             background-color: #000000;
+            width: 100%;
             height: 100%;
         }
+        
+        /* The Iframe Container */
         iframe {
-            position: fixed;
+            position: fixed;   /* Break out of document flow */
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100dvh;
+            
+            /* DYNAMIC RESOLUTION SETTINGS */
+            width: 100vw;      /* 100% of the Viewport Width */
+            height: 100dvh;    /* 100% of the Dynamic Viewport Height (ignores mobile address bars) */
+            
             border: none;
-            z-index: 99999;
+            z-index: 99999;    /* Sit on top of everything */
             background-color: #000000;
         }
     </style>
@@ -87,6 +89,6 @@ html_content = """
 </html>
 """
 
-# Render the HTML component with a specific height to prevent initial layout shift,
-# though the CSS 'position: fixed' handles the actual display logic.
-components.html(html_content, height=800, scrolling=False)
+# Height must be set here to render the component, but the CSS 'fixed' position
+# overrides this visually.
+components.html(html_content, height=1000, scrolling=False)
