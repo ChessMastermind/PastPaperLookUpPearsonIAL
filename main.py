@@ -8,12 +8,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# 2. Aggressive CSS: Hide UI + Lock Resolution
-# We add 'overflow: hidden' to .stApp to prevent Streamlit from 
-# adding its own scrollbars, forcing the app to match the screen resolution exactly.
+# 2. Aggressive CSS: Unlock the Streamlit Sandbox
+# We must target the Streamlit Component iframe itself and force it 
+# to break out of the standard layout flow.
 hide_streamlit_ui = """
     <style>
-        /* Hide all standard Streamlit UI elements */
+        /* 1. Hide standard Streamlit UI */
         header[data-testid="stHeader"],
         section[data-testid="stSidebar"],
         .stDeployButton,
@@ -22,58 +22,50 @@ hide_streamlit_ui = """
             display: none !important;
         }
         
-        /* Reset Block Container */
+        /* 2. Remove Layout Padding */
         .block-container {
             padding: 0 !important;
             margin: 0 !important;
         }
         
-        /* FORCE FULL SCREEN RESOLUTION */
-        /* This removes the scrollbar from the main Streamlit app, 
-           ensuring the iframe is the only thing the user interacts with. */
         .stApp {
             background-color: #000000 !important;
-            overflow: hidden !important; 
+            overflow: hidden !important;
         }
-        
-        iframe {
-            display: block;
+
+        /* 3. CRITICAL: Force the Streamlit Component Iframe to Full Screen
+           This targets the iframe created by components.html and makes it
+           overlay the entire page. */
+        iframe[title="streamlit.components.v1.html.html_component"] {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
+            border: none !important;
         }
     </style>
 """
 st.markdown(hide_streamlit_ui, unsafe_allow_html=True)
 
-# 3. The Responsive Payload
-# The CSS below dynamically captures the "Current Screen Resolution"
-# regardless of the device.
+# 3. JavaScript-Driven Payload
+# instead of relying on CSS percentages, we use JS to read the exact
+# window dimensions and apply them to our target iframe.
 html_content = """
 <!DOCTYPE html>
 <html>
 <head>
     <style>
-        /* Reset standard HTML margins */
         body, html {
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; /* Prevent internal scrolling */
+            margin: 0;
+            padding: 0;
             background-color: #000000;
-            width: 100%;
-            height: 100%;
+            overflow: hidden; /* No scrollbars allowed */
         }
-        
-        /* The Iframe Container */
-        iframe {
-            position: fixed;   /* Break out of document flow */
-            top: 0;
-            left: 0;
-            
-            /* DYNAMIC RESOLUTION SETTINGS */
-            width: 100vw;      /* 100% of the Viewport Width */
-            height: 100dvh;    /* 100% of the Dynamic Viewport Height (ignores mobile address bars) */
-            
+        #target-frame {
             border: none;
-            z-index: 99999;    /* Sit on top of everything */
-            background-color: #000000;
+            display: block;
         }
     </style>
     <script data-goatcounter="https://moon-papers.goatcounter.com/count"
@@ -81,14 +73,44 @@ html_content = """
 </head>
 <body>
     <iframe 
+        id="target-frame"
         src="https://chessmastermind.github.io/moon-papers/"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
         allowfullscreen
     ></iframe>
+
+    <script>
+        // THE JAVASCRIPT RESIZER
+        // This function reads the exact pixel size of the visible window
+        // and forces the iframe to match it.
+        function resizeIframe() {
+            const frame = document.getElementById('target-frame');
+            
+            // Get exact viewport dimensions
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            // Apply to iframe
+            frame.style.width = w + 'px';
+            frame.style.height = h + 'px';
+            
+            console.log(`Resized to ${w}x${h}`);
+        }
+
+        // Listen for window resize events (e.g., rotating phone)
+        window.addEventListener('resize', resizeIframe);
+        
+        // Listen for initial load
+        window.addEventListener('load', resizeIframe);
+        
+        // Force one run immediately just in case
+        resizeIframe();
+    </script>
 </body>
 </html>
 """
 
-# Height must be set here to render the component, but the CSS 'fixed' position
-# overrides this visually.
+# Render the component. 
+# The height here is irrelevant because our CSS overrides it, 
+# but we set it to avoid Streamlit warnings.
 components.html(html_content, height=1000, scrolling=False)
