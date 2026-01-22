@@ -1,6 +1,7 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
-# 1. Page Config: Wide mode is essential to remove side margins
+# 1. Page Config: Wide layout is required to reset margins
 st.set_page_config(
     page_title="Moon Papers",
     page_icon="🌙",
@@ -8,61 +9,73 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. CSS to Remove Streamlit's "Weird Upper Part" & Branding
+# 2. Hide Developer Toolbar (This hides the hamburger menu for users)
+st.set_option("client.toolbarMode", "viewer")
+
+# 3. CSS: Remove ALL padding, headers, and UI elements
 st.markdown(
     """
     <style>
-    /* 1. Remove the big white/black bar at the top (Streamlit's Header) */
-    header[data-testid="stHeader"] {
-        display: none !important;
-    }
-
-    /* 2. Remove the "Manage App" button and Developer Menu */
-    .stDeployButton, [data-testid="stStatusWidget"] {
+    /* Nuke the top header and the 'Manage app' button area */
+    header[data-testid="stHeader"],
+    [data-testid="stStatusWidget"],
+    .stDeployButton {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* 3. Remove the internal padding that "squashes" the site */
+    /* Remove ALL padding from the main Streamlit container */
     .block-container {
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
         padding-left: 0rem !important;
         padding-right: 0rem !important;
-        max-width: 100% !important;
+        margin-top: 0rem !important;
+        max-width: 100vw !important;
+    }
+    
+    /* Remove padding from the view container to prevent top whitespace */
+    .stAppViewContainer {
+        padding: 0 !important;
     }
 
-    /* 4. Remove the footer "Made with Streamlit" */
-    footer {
-        display: none !important;
-    }
-
-    /* 5. Ensure the background is seamless */
-    .stApp {
-        background-color: #000000;
+    /* Force background to black to hide any loading flashes */
+    .stApp, body {
+        background-color: #000000 !important;
+        overflow: hidden !important; /* Prevent double scrollbars */
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# 3. The Full-Screen Iframe
-# We use 'scrolling="yes"' and 'height: 100vh' to make it feel native.
+# 4. The "Fixed Overlay" Iframe
+# We use position:fixed to ignore Streamlit's layout engine entirely.
 target_url = "https://chessmastermind.github.io/moon-papers/"
 
-st.components.v1.html(
+components.html(
     f"""
-    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000;">
-        <script data-goatcounter="https://moon-papers.goatcounter.com/count"
-                async src="//gc.zgo.at/count.js"></script>
-
-        <iframe 
-            src="{target_url}" 
-            style="width: 100%; height: 100%; border: none;"
-            scrolling="yes"
-            allowfullscreen
-        ></iframe>
-    </div>
+    <script data-goatcounter="https://moon-papers.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
+            
+    <iframe 
+        src="{target_url}" 
+        style="
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            bottom: 0; 
+            right: 0; 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            z-index: 999999; 
+        "
+        allowfullscreen
+    ></iframe>
     """,
-    height=2000, # This height is a fallback; the CSS '100vh' above handles the real sizing
+    height=0, # Height doesn't matter because we used position: fixed
 )
