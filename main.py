@@ -47,7 +47,6 @@ st.markdown(f"""
     </style>
 </head>
 <body>
-    <div class="container">
     <div class="logo">🌙</div>
     <h1 style="font-size: 2.5em; margin-bottom: 10px;">Moon Papers</h1>
     <h2 style="color: #888; margin-bottom: 50px;">Has Moved to a New Domain</h2>
@@ -79,7 +78,6 @@ st.markdown(f"""
         Thank you for your support during our migration.<br>
         If you experience any issues accessing the new site, please check your internet connection.
     </p>
-</div>
 </body>
 </html>
 """, unsafe_allow_html=True)
