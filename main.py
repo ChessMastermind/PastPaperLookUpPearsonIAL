@@ -6,72 +6,48 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-st.markdown("""
-<style>
-    /* Hide Streamlit UI completely */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stApp { 
-        background-color: #000000 !important;
-        color: #ffffff !important;
-    }
-    .container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 40px 20px;
-        text-align: center;
-    }
-    .logo {
-        font-size: 4em;
-        margin-bottom: 20px;
-    }
-    .domain {
-        font-size: 2em;
-        color: #4ade80;
-        font-weight: bold;
-        margin: 30px 0;
-        word-break: break-all;
-    }
-    .btn {
-        display: inline-block;
-        background: #2563eb;
-        color: white !important;
-        text-decoration: none;
-        padding: 18px 50px;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 1.3em;
-        margin: 40px 0;
-        transition: all 0.3s;
-        border: 2px solid #2563eb;
-    }
-    .btn:hover {
-        background: #1d4ed8;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
-    }
-    .info {
-        background: rgba(255, 255, 255, 0.05);
-        border-left: 4px solid #4ade80;
-        padding: 20px;
-        margin: 30px 0;
-        text-align: left;
-    }
-    .info h3 {
-        margin-top: 0;
-        color: #4ade80;
-    }
-    .warning {
-        color: #fbbf24;
-        font-size: 0.9em;
-        margin-top: 40px;
-    }
-</style>
-""", unsafe_allow_html=True)
 
-st.markdown("""
-<div class="container">
+# Immediate redirect with user-friendly message
+st.markdown(f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="robots" content="noindex, nofollow">
+    <title>Redirecting to Moon Papers</title>
+    <style>
+        body {{
+            font-family: sans-serif;
+            background: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }}
+        .container {{
+            max-width: 600px;
+            padding: 2rem;
+        }}
+        h1 {{ font-size: 2.5rem; margin-bottom: 1rem; }}
+        p {{ font-size: 1.2rem; color: #ccc; margin-bottom: 2rem; }}
+        .btn {{
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }}
+        .btn:hover {{ background: #1d4ed8; }}
+    </style>
+</head>
+<body>
+    <div class="container">
     <div class="logo">🌙</div>
     <h1 style="font-size: 2.5em; margin-bottom: 10px;">Moon Papers</h1>
     <h2 style="color: #888; margin-bottom: 50px;">Has Moved to a New Domain</h2>
@@ -104,20 +80,8 @@ st.markdown("""
         If you experience any issues accessing the new site, please check your internet connection.
     </p>
 </div>
-""", unsafe_allow_html=True)
-
-# Optional: Add basic analytics tracking
-st.markdown("""
-<script>
-    // Track page view (add your analytics code here if needed)
-    console.log('User viewed the moved notice page');
-    
-    // Example: Google Analytics event
-    // gtag('event', 'page_view', {
-    //     'page_title': 'Moon Papers - Moved Notice',
-    //     'page_location': window.location.href
-    // });
-</script>
+</body>
+</html>
 """, unsafe_allow_html=True)
 
 st.stop()
