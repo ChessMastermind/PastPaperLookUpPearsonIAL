@@ -1,5 +1,7 @@
 import streamlit as st
+from streamlit_redirect import redirect
 from streamlit.components.v1 import html
+import time
 
 # Configure page
 st.set_page_config(
@@ -8,25 +10,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Hide all Streamlit chrome (menu, footer, headers)
+# Hide Streamlit chrome
 st.markdown("""
 <style>
-#MainMenu, footer, header, .stDeployButton, .stSpinner {
-    visibility: hidden;
-    display: none;
-}
-.stApp {
-    background-color: #000000;
-    margin: 0;
-    padding: 0;
-}
-iframe {
-    border: none;
-}
+#MainMenu, footer, header, .stDeployButton {visibility: hidden; display: none;}
+.stApp {background-color: #000000;}
+iframe {border: none;}
 </style>
 """, unsafe_allow_html=True)
 
-# Your complete HTML content
+# HTML content
 HTML_CONTENT = """<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -113,5 +106,20 @@ HTML_CONTENT = """<!DOCTYPE html>
 </body>
 </html>"""
 
-# Render full-screen
+# Display the HTML
 html(HTML_CONTENT, height=800, scrolling=False)
+
+# Automatic redirect with countdown
+if 'redirected' not in st.session_state:
+    st.session_state.redirected = False
+
+if not st.session_state.redirected:
+    placeholder = st.empty()
+    
+    for i in range(5, 0, -1):
+        placeholder.info(f"⏱️ Redirecting to moon-papers.com in {i} seconds...")
+        time.sleep(1)
+    
+    placeholder.success("🚀 Redirecting now...")
+    st.session_state.redirected = True
+    redirect("https://moon-papers.com")
