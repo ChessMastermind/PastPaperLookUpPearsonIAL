@@ -1,12 +1,9 @@
 import streamlit as st
 
-# Immediate redirect (0 seconds)
 st.markdown(
-    '<meta http-equiv="refresh" content="0; url=https://moon-papers.com">',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<script>window.location.href = "https://moon-papers.com";</script>',
+    '<a href="https://moon-papers.com" target="_top" '
+    'style="display:block;text-align:center;padding:20px;background:#2563eb;'
+    'color:white;text-decoration:none;border-radius:10px;font-size:1.3rem;">'
+    '→ Visit New Site Now</a>',
     unsafe_allow_html=True
 )
